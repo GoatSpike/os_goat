@@ -15,6 +15,14 @@ static HELLO: &[u8] = b"Hello World!";
 pub extern "C" fn _start() -> ! {
     println!("Hello World{}", "!");
 
+    blog_os_goat::init(); // IDTを初期化
+
+    fn stack_overflow() {
+        stack_overflow(); // スタックオーバーフローを引き起こす
+    }
+
+    stack_overflow();
+
     x86_64::instructions::interrupts::int3(); // ブレークポイントをトリガー
 
     #[cfg(test)]
