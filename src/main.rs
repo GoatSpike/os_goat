@@ -15,6 +15,8 @@ static HELLO: &[u8] = b"Hello World!";
 pub extern "C" fn _start() -> ! {
     println!("Hello World{}", "!");
 
+    x86_64::instructions::interrupts::int3(); // ブレークポイントをトリガー
+
     #[cfg(test)]
     test_main(); // テストを実行
 
@@ -34,4 +36,9 @@ fn panic(info: &PanicInfo) -> ! {
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     blog_os_goat::test_panic_handler(info)
+}
+
+#[test_case]
+fn trivial_assertion() {
+    assert_eq!(1, 1);
 }
