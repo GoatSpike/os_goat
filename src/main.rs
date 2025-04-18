@@ -6,32 +6,34 @@
 
 use core::panic::PanicInfo;
 use blog_os_goat::println; // println!マクロをインポート
+use bootloader::{BootInfo, entry_point}; 
 
-#[unsafe(no_mangle)] // この関数の名前修飾をしない
-pub extern "C" fn _start() -> ! {
+entry_point!(kernel_main);
+
+fn kernel_main(boot_info: &'static BootInfo) -> ! {
+    use blog_os_goat::memory::{self, BootInfoFrameAllocator};
+    use x86_64::{VirtAddr, structures::paging::Page};
+
     println!("Hello World{}", "!");
+    blog_os_goat::init();
 
-    blog_os_goat::init(); // IDTを初期化
+    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+    let mut mapper = unsafe { memory::init(phys_mem_offset) };
+    let mut frame_allocator = unsafe { BootInfoFrameAllocator::init(&boot_info.memory_map) };
 
-    use x86_64::registers::control::Cr3;
+    // map an unused page
+        let page = Page::containing_address(VirtAddr::new(0xdeadbeaf000));
 
-    let (level4_page_table, _) = Cr3::read();
-    println!("Level 4 page table: {:?}", level4_page_table.start_address());
+    memory::create_example_mapping(page, &mut mapper, &mut frame_allocator);
 
-    let ptr = 0x204dd9 as *mut u8;
-    unsafe {
-        let x = *ptr;
-    }
-    println!("read worked");
-
-    // unsafe {
-    //     *ptr = 42; // 0xdeadbeafのアドレスに42を書き込む
-    // }
+    // write the string `New!` to the screen through the new mapping
+    let page_ptr: *mut u64 = page.start_address().as_mut_ptr();
+    unsafe { page_ptr.offset(400).write_volatile(0x_f021_f077_f065_f04e) };
 
     #[cfg(test)]
-    test_main(); // テストを実行
+    test_main();
 
-    println!("It dit not crash!");
+    println!("It did not crash!");
     blog_os_goat::hlt_loop();
 }
 
