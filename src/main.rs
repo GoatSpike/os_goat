@@ -13,6 +13,21 @@ pub extern "C" fn _start() -> ! {
 
     blog_os_goat::init(); // IDTを初期化
 
+    use x86_64::registers::control::Cr3;
+
+    let (level4_page_table, _) = Cr3::read();
+    println!("Level 4 page table: {:?}", level4_page_table.start_address());
+
+    let ptr = 0x204dd9 as *mut u8;
+    unsafe {
+        let x = *ptr;
+    }
+    println!("read worked");
+
+    // unsafe {
+    //     *ptr = 42; // 0xdeadbeafのアドレスに42を書き込む
+    // }
+
     #[cfg(test)]
     test_main(); // テストを実行
 
