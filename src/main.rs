@@ -28,7 +28,10 @@ pub extern "C" fn _start() -> ! {
     #[cfg(test)]
     test_main(); // テストを実行
 
-    loop {}
+    loop {
+        use blog_os_goat::print;
+        print!("-")
+    }
 }
 
 /// この関数はパニック時に呼ばれる
