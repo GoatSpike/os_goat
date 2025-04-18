@@ -4,12 +4,8 @@
 #![test_runner(blog_os_goat::test_runner)] // テストランナーをカスタムのものに置き換える
 #![reexport_test_harness_main = "test_main"] // テストハーネスのメイン関数をカスタムのものに置き換える
 
-mod vga_buffer;
-mod serial;
-
 use core::panic::PanicInfo;
-
-static HELLO: &[u8] = b"Hello World!";
+use blog_os_goat::println; // println!マクロをインポート
 
 #[unsafe(no_mangle)] // この関数の名前修飾をしない
 pub extern "C" fn _start() -> ! {
@@ -17,21 +13,11 @@ pub extern "C" fn _start() -> ! {
 
     blog_os_goat::init(); // IDTを初期化
 
-    fn stack_overflow() {
-        stack_overflow(); // スタックオーバーフローを引き起こす
-    }
-
-    stack_overflow();
-
-    x86_64::instructions::interrupts::int3(); // ブレークポイントをトリガー
-
     #[cfg(test)]
     test_main(); // テストを実行
 
-    loop {
-        use blog_os_goat::print;
-        print!("-")
-    }
+    println!("It dit not crash!");
+    blog_os_goat::hlt_loop();
 }
 
 /// この関数はパニック時に呼ばれる
@@ -39,7 +25,7 @@ pub extern "C" fn _start() -> ! {
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     println!("{}", info);
-    loop {}
+    blog_os_goat::hlt_loop();
 }
 
 // テストモードで使うパニックハンドラ

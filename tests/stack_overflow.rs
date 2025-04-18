@@ -2,12 +2,10 @@
 #![no_main]
 #![feature(abi_x86_interrupt)]
 
+use blog_os_goat::{QemuExitCode, exit_qemu, serial_print, serial_println};
 use core::panic::PanicInfo;
-use blog_os_goat::serial_print;
 use lazy_static::lazy_static;
-use x86_64::structures::idt::InterruptDescriptorTable;
-use blog_os_goat::{exit_qemu, QemuExitCode, serial_println};
-use x86_64::structures::idt::InterruptStackFrame;
+use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() -> ! {
@@ -16,20 +14,16 @@ pub extern "C" fn _start() -> ! {
     blog_os_goat::gdt::init();
     init_test_idt();
 
-    unimplemented!();
+    // trigger a stack overflow
+    stack_overflow();
 
     panic!("Execution continued after stack overflow");
 }
 
 #[allow(unconditional_recursion)]
 fn stack_overflow() {
-    stack_overflow();
-    volatile::Volatile::new(0).read();
-}
-
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    blog_os_goat::test_panic_handler(info)
+    stack_overflow(); // for each recursion, the return address is pushed
+    volatile::Volatile::new(0).read(); // prevent tail recursion optimizations
 }
 
 lazy_static! {
@@ -40,6 +34,7 @@ lazy_static! {
                 .set_handler_fn(test_double_fault_handler)
                 .set_stack_index(blog_os_goat::gdt::DOUBLE_FAULT_IST_INDEX);
         }
+
         idt
     };
 }
@@ -49,10 +44,15 @@ pub fn init_test_idt() {
 }
 
 extern "x86-interrupt" fn test_double_fault_handler(
-    _stack_frame: InterruptStackFrame, _error_code: u64) -> ! {
+    _stack_frame: InterruptStackFrame,
+    _error_code: u64,
+) -> ! {
     serial_println!("[ok]");
     exit_qemu(QemuExitCode::Success);
-    loop {
-        
-    }
+    loop {}
+}
+
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    blog_os_goat::test_panic_handler(info)
 }
