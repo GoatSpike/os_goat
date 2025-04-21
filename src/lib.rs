@@ -5,6 +5,8 @@
 #![reexport_test_harness_main = "test_main"]
 #![feature(abi_x86_interrupt)]
 
+extern crate alloc;
+
 use core::panic::PanicInfo;
 
 pub mod gdt;
@@ -12,6 +14,7 @@ pub mod interrupts;
 pub mod serial;
 pub mod vga_buffer;
 pub mod memory;
+pub mod allocator;
 
 pub fn init() {
     gdt::init();
