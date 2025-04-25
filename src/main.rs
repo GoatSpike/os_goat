@@ -7,7 +7,7 @@
 extern crate alloc; // アロケータを使用するために必要
 
 use core::panic::PanicInfo;
-use blog_os_goat::println; // println!マクロをインポート
+use blog_os_goat::{println, task::{simple_executor::SimpleExecutor, Task}}; // println!マクロをインポート
 use bootloader::{BootInfo, entry_point}; 
 use alloc::{boxed::Box, rc::Rc, vec::Vec, vec}; // Boxを使用するために必要
 
@@ -52,11 +52,25 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     let page_ptr: *mut u64 = page.start_address().as_mut_ptr();
     unsafe { page_ptr.offset(400).write_volatile(0x_f021_f077_f065_f04e) };
 
+    let mut executor = SimpleExecutor::new();
+
+    executor.spawn(Task::new(example_task()));
+    executor.run();
+
     #[cfg(test)]
     test_main();
 
     println!("It did not crash!");
     blog_os_goat::hlt_loop();
+}
+
+async fn async_number() -> u32 {
+    42
+}
+
+async fn example_task() {
+    let number = async_number().await;
+    println!("async number: {}", number);
 }
 
 /// この関数はパニック時に呼ばれる
